@@ -11,7 +11,7 @@ PlexWatch is a Discord bot that brings your Plex media server to life with a rea
 
 ## Features
 
-- **Plex Monitoring**: Displays active streams with details like title, user, progress, quality, and player info (up to 8 streams).
+- **Plex Monitoring**: Displays active streams with details like title, user, progress, quality, and player info.
 - **SABnzbd Integration**: Tracks ongoing downloads with progress, speed, and size.
 - **Uptime Tracking**: Shows server uptime over 24h, 7d, and 30d with percentage and duration.
 - **Customizable Dashboard**: Updates every minute with a clean Discord embed, fully configurable via JSON.
@@ -105,6 +105,7 @@ services:
       
       # Optional
       # - HIDE_USERNAMES=true
+      # - MAX_STREAMS_DISPLAYED=8
       # - SABNZBD_URL=http://192.168.1.1:8282
       # - SABNZBD_API_KEY=your_sabnzbd_api_key
 
@@ -131,6 +132,7 @@ PLEX_URL=https://your-plex-server:32400
 PLEX_TOKEN=your_plex_token
 CHANNEL_ID=your_discord_channel_id
 HIDE_USERNAMES=false
+MAX_STREAMS_DISPLAYED=8
 SABNZBD_URL=http://your-sabnzbd-server:8080
 SABNZBD_API_KEY=your_sabnzbd_api_key
 UPTIME_URL=https://your-uptime-kuma-server:3001
@@ -145,6 +147,7 @@ UPTIME_MONITOR_ID=your_monitor_id
 - `PLEX_TOKEN`: Your Plex API token (see [Plex Support](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 - `CHANNEL_ID`: Discord channel ID where the dashboard embed appears.
 - `HIDE_USERNAMES`: Optional, set to `true` to hide Plex usernames in current stream entries.
+- `MAX_STREAMS_DISPLAYED`: Optional, maximum number of current stream entries to show in the dashboard (default: `8`).
 - `SABNZBD_URL` & `SABNZBD_API_KEY`: Optional, for SABnzbd integration (get API key from SABnzbd settings).
 - `UPTIME_URL`: Optional, URL to your Uptime Kuma server (e.g., https://uptime.example.com:3001)
 - `UPTIME_USERNAME`: Optional, Username for your Uptime Kuma instance

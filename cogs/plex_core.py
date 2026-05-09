@@ -18,6 +18,17 @@ def env_flag(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def env_int(name: str, default: int) -> int:
+    """Read an integer environment variable with a safe fallback."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 RUNNING_IN_DOCKER = env_flag("RUNNING_IN_DOCKER")
 
 if not RUNNING_IN_DOCKER:
@@ -32,6 +43,7 @@ class PlexCore(commands.Cog):
         self.PLEX_URL = os.getenv("PLEX_URL")
         self.PLEX_TOKEN = os.getenv("PLEX_TOKEN")
         self.HIDE_USERNAMES = env_flag("HIDE_USERNAMES")
+        self.MAX_STREAMS_DISPLAYED = max(1, env_int("MAX_STREAMS_DISPLAYED", 8))
         channel_id = os.getenv("CHANNEL_ID")
         if channel_id is None:
             self.logger.error("CHANNEL_ID not set in .env file")
@@ -508,11 +520,12 @@ class PlexCore(commands.Cog):
 
         if info["active_users"]:
             stream_count = len(info["active_users"])
+            max_streams = self.MAX_STREAMS_DISPLAYED
 
-            streams_limited = info["active_users"][:8]
+            streams_limited = info["active_users"][:max_streams]
             streams_text = " ".join(streams_limited)
             embed.add_field(
-                name=f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:" + (f" (showing 8 of {stream_count})" if stream_count > 8 else ""),
+                name=f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:" + (f" (showing {max_streams} of {stream_count})" if stream_count > max_streams else ""),
                 value=streams_text,
                 inline=False,
             )
