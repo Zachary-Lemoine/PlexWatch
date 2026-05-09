@@ -396,7 +396,7 @@ class PlexCore(commands.Cog):
                 status = discord.Status.online
             else:
                 presence_parts = [
-                    f"{'{:,.0f}'.format(stats[section['section_title']]['count']).replace(',', '.')} {section['display_name']} {section['emoji']}"
+                    f"{'{:,.0f}'.format(stats[section['section_title']]['count'])} {section['display_name']} {section['emoji']}"
                     for section in presence_config["sections"]
                     if section["section_title"] in stats
                 ]
@@ -497,12 +497,12 @@ class PlexCore(commands.Cog):
             if title in stats:
                 section_data = stats[title]
                 display_name = f"{section_data['display_name']} {section_data['emoji']}"
-                value = f"```{'{:,.0f}'.format(section_data['count']).replace(',', '.')}```"
+                value = f"```{'{:,.0f}'.format(section_data['count'])}```"
                 embed.add_field(name=display_name, value=value, inline=True)
                 if section_data["show_episodes"]:
                     embed.add_field(
                         name=f"{section_data['display_name']} Episodes 📺",
-                        value=f"```{'{:,.0f}'.format(section_data['episodes']).replace(',', '.')}```",
+                        value=f"```{'{:,.0f}'.format(section_data['episodes'])}```",
                         inline=True,
                     )
 
