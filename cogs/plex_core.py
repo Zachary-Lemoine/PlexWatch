@@ -10,7 +10,15 @@ from typing import Optional, Dict, Any, List
 
 from dotenv import load_dotenv
 
-RUNNING_IN_DOCKER = os.getenv("RUNNING_IN_DOCKER", "false").lower() == "true"
+def env_flag(name: str, default: bool = False) -> bool:
+    """Read common boolean environment variable values."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+RUNNING_IN_DOCKER = env_flag("RUNNING_IN_DOCKER")
 
 if not RUNNING_IN_DOCKER:
     load_dotenv()
@@ -23,6 +31,7 @@ class PlexCore(commands.Cog):
         # Load environment variables
         self.PLEX_URL = os.getenv("PLEX_URL")
         self.PLEX_TOKEN = os.getenv("PLEX_TOKEN")
+        self.HIDE_USERNAMES = env_flag("HIDE_USERNAMES")
         channel_id = os.getenv("CHANNEL_ID")
         if channel_id is None:
             self.logger.error("CHANNEL_ID not set in .env file")
@@ -221,7 +230,8 @@ class PlexCore(commands.Cog):
         self.logger.debug(f"\n{'='*50}\nSession {idx} Raw Data:")
         self.logger.debug(f"Type: {session.type}")
         self.logger.debug(f"Title: {session.title}")
-        self.logger.debug(f"User: {session.usernames[0] if session.usernames else 'Unknown'}")
+        user = "Hidden" if self.HIDE_USERNAMES else (session.usernames[0] if session.usernames else "Unknown")
+        self.logger.debug(f"User: {user}")
         self.logger.debug(f"Player: {session.players[0].product if session.players else 'Unknown'}")
 
         if hasattr(session, "media") and session.media:
@@ -265,6 +275,7 @@ class PlexCore(commands.Cog):
             )
 
             title = self._get_formatted_title(session)
+            stream_title = title if self.HIDE_USERNAMES else f"{title} | {displayed_user}"
             progress_percent = (
                 (session.viewOffset / session.duration * 100)
                 if hasattr(session, "viewOffset") and hasattr(session, "duration") and session.duration
@@ -306,7 +317,7 @@ class PlexCore(commands.Cog):
             )
 
             return (
-                f"**```{content_emoji} {title} | {displayed_user}\n"
+                f"**```{content_emoji} {stream_title}\n"
                 f"└─ {progress_display} | {current_time}/{total_time}\n"
                 f" └─ {transcode_emoji} {quality} {bitrate} | {product_name}```**"
             )

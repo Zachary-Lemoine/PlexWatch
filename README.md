@@ -104,6 +104,7 @@ services:
       - CHANNEL_ID=your_discord_channel_id
       
       # Optional
+      # - HIDE_USERNAMES=true
       # - SABNZBD_URL=http://192.168.1.1:8282
       # - SABNZBD_API_KEY=your_sabnzbd_api_key
 
@@ -129,6 +130,7 @@ DISCORD_AUTHORIZED_USERS=123456789012345678,987654321098765432  # Comma-separate
 PLEX_URL=https://your-plex-server:32400
 PLEX_TOKEN=your_plex_token
 CHANNEL_ID=your_discord_channel_id
+HIDE_USERNAMES=false
 SABNZBD_URL=http://your-sabnzbd-server:8080
 SABNZBD_API_KEY=your_sabnzbd_api_key
 UPTIME_URL=https://your-uptime-kuma-server:3001
@@ -142,6 +144,7 @@ UPTIME_MONITOR_ID=your_monitor_id
 - `PLEX_URL`: URL to your Plex server (include protocol and port).
 - `PLEX_TOKEN`: Your Plex API token (see [Plex Support](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 - `CHANNEL_ID`: Discord channel ID where the dashboard embed appears.
+- `HIDE_USERNAMES`: Optional, set to `true` to hide Plex usernames in current stream entries.
 - `SABNZBD_URL` & `SABNZBD_API_KEY`: Optional, for SABnzbd integration (get API key from SABnzbd settings).
 - `UPTIME_URL`: Optional, URL to your Uptime Kuma server (e.g., https://uptime.example.com:3001)
 - `UPTIME_USERNAME`: Optional, Username for your Uptime Kuma instance
@@ -249,7 +252,7 @@ The `/data/user_mapping.json` file allows you to personalize Plex usernames by m
 - **Key**: The exact Plex username (case-sensitive).
 - **Value**: The custom name displayed in the dashboard.
 
-If a username is listed, its mapped name is used (e.g., "Alex" instead of "user123"); otherwise, the original Plex username is shown.
+If a username is listed, its mapped name is used (e.g., "Alex" instead of "user123"); otherwise, the original Plex username is shown. Set `HIDE_USERNAMES=true` to omit usernames from current stream entries entirely.
 
 ## Logging
 Logs are stored in `/logs/plexwatch_debug.log`:
