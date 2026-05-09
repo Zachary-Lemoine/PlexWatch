@@ -147,7 +147,7 @@ UPTIME_MONITOR_ID=your_monitor_id
 - `PLEX_TOKEN`: Your Plex API token (see [Plex Support](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
 - `CHANNEL_ID`: Discord channel ID where the dashboard embed appears.
 - `HIDE_USERNAMES`: Optional, set to `true` to hide Plex usernames in current stream entries.
-- `MAX_STREAMS_DISPLAYED`: Optional, maximum number of current stream entries to show in the dashboard (default: `8`).
+- `MAX_STREAMS_DISPLAYED`: Optional, maximum number of current stream entries to show in the dashboard (default: `8`). The bot may show fewer if Discord's embed field limit is reached.
 - `SABNZBD_URL` & `SABNZBD_API_KEY`: Optional, for SABnzbd integration (get API key from SABnzbd settings).
 - `UPTIME_URL`: Optional, URL to your Uptime Kuma server (e.g., https://uptime.example.com:3001)
 - `UPTIME_USERNAME`: Optional, Username for your Uptime Kuma instance

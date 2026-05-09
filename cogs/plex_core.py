@@ -6,7 +6,7 @@ import json
 import os
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 
 from dotenv import load_dotenv
 
@@ -30,6 +30,7 @@ def env_int(name: str, default: int) -> int:
 
 
 RUNNING_IN_DOCKER = env_flag("RUNNING_IN_DOCKER")
+DISCORD_EMBED_FIELD_VALUE_LIMIT = 1024
 
 if not RUNNING_IN_DOCKER:
     load_dotenv()
@@ -520,12 +521,9 @@ class PlexCore(commands.Cog):
 
         if info["active_users"]:
             stream_count = len(info["active_users"])
-            max_streams = self.MAX_STREAMS_DISPLAYED
-
-            streams_limited = info["active_users"][:max_streams]
-            streams_text = " ".join(streams_limited)
+            shown_count, streams_text = self._build_streams_field_value(info["active_users"])
             embed.add_field(
-                name=f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:" + (f" (showing {max_streams} of {stream_count})" if stream_count > max_streams else ""),
+                name=f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:" + (f" (showing {shown_count} of {stream_count})" if shown_count < stream_count else ""),
                 value=streams_text,
                 inline=False,
             )
@@ -550,6 +548,22 @@ class PlexCore(commands.Cog):
             embed.add_field(name="Total Space 🗄️", value=f"```{info['downloads']['diskspacetotal1']}```", inline=True)
         else:
             embed.add_field(name="Current Downloads:", value="💤 *No active downloads currently*", inline=False)
+
+    def _build_streams_field_value(self, streams: List[str]) -> Tuple[int, str]:
+        """Build a Discord-safe field value for active streams."""
+        shown_streams: List[str] = []
+        streams_text = ""
+
+        for stream in streams[:self.MAX_STREAMS_DISPLAYED]:
+            candidate = stream if not streams_text else f"{streams_text} {stream}"
+            if len(candidate) > DISCORD_EMBED_FIELD_VALUE_LIMIT:
+                break
+            shown_streams.append(stream)
+            streams_text = candidate
+
+        if streams_text:
+            return len(shown_streams), streams_text
+        return 0, "⚠️ *Stream details are too long to display within Discord's limit.*"
 
     def _calculate_total_size(self, downloads: List[Dict[str, Any]]) -> str:
         """Calculate total download size in human-readable format."""
