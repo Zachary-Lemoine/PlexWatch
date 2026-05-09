@@ -106,6 +106,7 @@ services:
       # Optional
       # - HIDE_USERNAMES=true
       # - MAX_STREAMS_DISPLAYED=8
+      # - MAX_STREAM_FIELDS=3
       # - SABNZBD_URL=http://192.168.1.1:8282
       # - SABNZBD_API_KEY=your_sabnzbd_api_key
 
@@ -133,6 +134,7 @@ PLEX_TOKEN=your_plex_token
 CHANNEL_ID=your_discord_channel_id
 HIDE_USERNAMES=false
 MAX_STREAMS_DISPLAYED=8
+MAX_STREAM_FIELDS=3
 SABNZBD_URL=http://your-sabnzbd-server:8080
 SABNZBD_API_KEY=your_sabnzbd_api_key
 UPTIME_URL=https://your-uptime-kuma-server:3001
@@ -148,6 +150,7 @@ UPTIME_MONITOR_ID=your_monitor_id
 - `CHANNEL_ID`: Discord channel ID where the dashboard embed appears.
 - `HIDE_USERNAMES`: Optional, set to `true` to hide Plex usernames in current stream entries.
 - `MAX_STREAMS_DISPLAYED`: Optional, maximum number of current stream entries to show in the dashboard (default: `8`). The bot may show fewer if Discord's embed field limit is reached.
+- `MAX_STREAM_FIELDS`: Optional, maximum number of Discord fields to use for current stream entries (default: `3`). Higher values can show more streams but make the dashboard taller.
 - `SABNZBD_URL` & `SABNZBD_API_KEY`: Optional, for SABnzbd integration (get API key from SABnzbd settings).
 - `UPTIME_URL`: Optional, URL to your Uptime Kuma server (e.g., https://uptime.example.com:3001)
 - `UPTIME_USERNAME`: Optional, Username for your Uptime Kuma instance

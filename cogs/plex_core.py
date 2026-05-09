@@ -31,6 +31,7 @@ def env_int(name: str, default: int) -> int:
 
 RUNNING_IN_DOCKER = env_flag("RUNNING_IN_DOCKER")
 DISCORD_EMBED_FIELD_VALUE_LIMIT = 1024
+DISCORD_EMBED_FIELD_LIMIT = 25
 
 if not RUNNING_IN_DOCKER:
     load_dotenv()
@@ -45,6 +46,7 @@ class PlexCore(commands.Cog):
         self.PLEX_TOKEN = os.getenv("PLEX_TOKEN")
         self.HIDE_USERNAMES = env_flag("HIDE_USERNAMES")
         self.MAX_STREAMS_DISPLAYED = max(1, env_int("MAX_STREAMS_DISPLAYED", 8))
+        self.MAX_STREAM_FIELDS = max(1, env_int("MAX_STREAM_FIELDS", 3))
         channel_id = os.getenv("CHANNEL_ID")
         if channel_id is None:
             self.logger.error("CHANNEL_ID not set in .env file")
@@ -521,12 +523,21 @@ class PlexCore(commands.Cog):
 
         if info["active_users"]:
             stream_count = len(info["active_users"])
-            shown_count, streams_text = self._build_streams_field_value(info["active_users"])
-            embed.add_field(
-                name=f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:" + (f" (showing {shown_count} of {stream_count})" if shown_count < stream_count else ""),
-                value=streams_text,
-                inline=False,
+            reserved_download_fields = 4
+            max_stream_fields = min(
+                self.MAX_STREAM_FIELDS,
+                max(1, DISCORD_EMBED_FIELD_LIMIT - len(embed.fields) - reserved_download_fields),
             )
+            shown_count, stream_field_values = self._build_streams_field_values(info["active_users"], max_stream_fields)
+
+            for field_index, streams_text in enumerate(stream_field_values, start=1):
+                field_name = (
+                    f"{stream_count} current Stream{'s' if stream_count != 1 else ''}:"
+                    + (f" (showing {shown_count} of {stream_count})" if shown_count < stream_count else "")
+                    if field_index == 1
+                    else f"Current Streams continued ({field_index}/{len(stream_field_values)}):"
+                )
+                embed.add_field(name=field_name, value=streams_text, inline=False)
         else:
             embed.add_field(name="Current Streams:", value="💤 *No active streams currently*", inline=False)
 
@@ -549,21 +560,40 @@ class PlexCore(commands.Cog):
         else:
             embed.add_field(name="Current Downloads:", value="💤 *No active downloads currently*", inline=False)
 
-    def _build_streams_field_value(self, streams: List[str]) -> Tuple[int, str]:
-        """Build a Discord-safe field value for active streams."""
-        shown_streams: List[str] = []
-        streams_text = ""
+    def _build_streams_field_values(self, streams: List[str], max_fields: int) -> Tuple[int, List[str]]:
+        """Build Discord-safe field values for active streams."""
+        field_values: List[str] = []
+        current_value = ""
+        shown_count = 0
 
         for stream in streams[:self.MAX_STREAMS_DISPLAYED]:
-            candidate = stream if not streams_text else f"{streams_text} {stream}"
-            if len(candidate) > DISCORD_EMBED_FIELD_VALUE_LIMIT:
-                break
-            shown_streams.append(stream)
-            streams_text = candidate
+            candidate = stream if not current_value else f"{current_value} {stream}"
+            if len(candidate) <= DISCORD_EMBED_FIELD_VALUE_LIMIT:
+                current_value = candidate
+                shown_count += 1
+                continue
 
-        if streams_text:
-            return len(shown_streams), streams_text
-        return 0, "⚠️ *Stream details are too long to display within Discord's limit.*"
+            if current_value:
+                field_values.append(current_value)
+                if len(field_values) >= max_fields:
+                    current_value = ""
+                    break
+
+            if len(stream) > DISCORD_EMBED_FIELD_VALUE_LIMIT:
+                if not field_values:
+                    field_values.append("⚠️ *Stream details are too long to display within Discord's limit.*")
+                current_value = ""
+                break
+
+            current_value = stream
+            shown_count += 1
+
+        if current_value and len(field_values) < max_fields:
+            field_values.append(current_value)
+
+        if field_values:
+            return shown_count, field_values
+        return 0, ["⚠️ *Stream details are too long to display within Discord's limit.*"]
 
     def _calculate_total_size(self, downloads: List[Dict[str, Any]]) -> str:
         """Calculate total download size in human-readable format."""
