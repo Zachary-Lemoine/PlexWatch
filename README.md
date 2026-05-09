@@ -93,7 +93,7 @@ Here’s how PlexWatch looks in action:
 ```
 services:
   plexwatch:
-    image: ghcr.io/nichtlegacy/plexwatch:latest
+    image: ghcr.io/readerr0/plexwatch:latest
     container_name: plexwatch
     environment:
       - RUNNING_IN_DOCKER=true
