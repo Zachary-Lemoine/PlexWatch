@@ -43,6 +43,38 @@
     "cache": {
         "library_update_interval": 900
     },
+    "voice_channel_status": [
+        {
+            "function_name": "Plex Status",
+            "channel_id": "",
+            "channel_name_prefix": "Plex: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Users Streaming",
+            "channel_id": "",
+            "channel_name_prefix": "Streaming: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Movies",
+            "channel_id": "",
+            "channel_name_prefix": "Movies: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Series",
+            "channel_id": "",
+            "channel_name_prefix": "Series: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Episodes",
+            "channel_id": "",
+            "channel_name_prefix": "Episodes: ",
+            "enabled": false
+        }
+    ],
     "sabnzbd": {
         "keywords": ["AC3", "DL", "German", "1080p", "2160p", "4K", "GERMAN", "English"]
     }

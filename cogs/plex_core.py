@@ -32,6 +32,14 @@ def env_int(name: str, default: int) -> int:
 RUNNING_IN_DOCKER = env_flag("RUNNING_IN_DOCKER")
 DISCORD_EMBED_FIELD_VALUE_LIMIT = 1024
 DISCORD_EMBED_FIELD_LIMIT = 25
+DISCORD_CHANNEL_NAME_LIMIT = 100
+VOICE_CHANNEL_STATUS_FUNCTIONS = {
+    "Plex Status",
+    "Users Streaming",
+    "Total Movies",
+    "Total Series",
+    "Total Episodes",
+}
 
 if not RUNNING_IN_DOCKER:
     load_dotenv()
@@ -70,7 +78,9 @@ class PlexCore(commands.Cog):
 
         # Cache settings
         self.library_cache: Dict[str, Dict[str, Any]] = {}
+        self.library_totals_cache: Dict[str, int] = {"movies": 0, "series": 0, "episodes": 0}
         self.last_library_update: Optional[datetime] = None
+        self.last_library_totals_update: Optional[datetime] = None
         self.library_update_interval = self.config.get("cache", {}).get("library_update_interval", 900)
 
         self.user_mapping = self._load_user_mapping()
@@ -87,6 +97,7 @@ class PlexCore(commands.Cog):
                 "offline_text": "🔴 Server Offline!",
                 "stream_text": "{count} active Stream{s} 🟢",
             },
+            "voice_channel_status": [],
             "cache": {"library_update_interval": 900},
         }
         try:
@@ -149,6 +160,7 @@ class PlexCore(commands.Cog):
                 "status": "🟢 Online",
                 "uptime": self.calculate_uptime(),
                 "library_stats": self.get_library_stats(),
+                "library_totals": self.get_library_totals(),
                 "active_users": self.get_active_streams(),
                 "current_streams": self.plex.sessions(),
             }
@@ -215,6 +227,38 @@ class PlexCore(commands.Cog):
         except Exception as e:
             self.logger.error(f"Error updating library stats: {e}")
             return self.library_cache
+
+    def get_library_totals(self) -> Dict[str, int]:
+        """Fetch aggregate Plex library totals for voice channel status names."""
+        current_time = datetime.now()
+        if (
+            self.last_library_totals_update
+            and (current_time - self.last_library_totals_update).total_seconds() <= self.library_update_interval
+        ):
+            return self.library_totals_cache
+
+        if not self.plex:
+            self.plex = self.connect_to_plex()
+        if not self.plex:
+            return self.library_totals_cache
+
+        try:
+            totals = {"movies": 0, "series": 0, "episodes": 0}
+            for section in self.plex.library.sections():
+                section_type = getattr(section, "type", "")
+                items = section.all() if hasattr(section, "all") else []
+                if section_type == "movie":
+                    totals["movies"] += len(items)
+                elif section_type == "show":
+                    totals["series"] += len(items)
+                    totals["episodes"] += sum(getattr(show, "leafCount", 0) or 0 for show in items)
+
+            self.library_totals_cache = totals
+            self.last_library_totals_update = current_time
+            return totals
+        except Exception as e:
+            self.logger.error(f"Error updating aggregate library totals: {e}")
+            return self.library_totals_cache
 
     def _build_section_stats(self, section, config: Dict[str, Any]) -> Dict[str, Any]:
         """Build statistics dictionary for a Plex section."""
@@ -388,6 +432,7 @@ class PlexCore(commands.Cog):
             "status": "🔴 Offline",
             "offline_since": self.offline_since,
             "library_stats": stats,
+            "library_totals": {"movies": 0, "series": 0, "episodes": 0},
             "active_users": [],
             "current_streams": [],
         }
@@ -427,8 +472,6 @@ class PlexCore(commands.Cog):
     async def update_dashboard(self) -> None:
         """Update Discord dashboard with Plex, SABnzbd, and Uptime data."""
         channel = self.bot.get_channel(self.CHANNEL_ID)
-        if not channel:
-            return
 
         try:
             info = self.get_server_info()
@@ -453,10 +496,83 @@ class PlexCore(commands.Cog):
                 )
                 info["last_offline"] = uptime_data[6] if uptime_data[6] else "Not available"
 
-            embed = await self.create_dashboard_embed(info)
-            await self._update_dashboard_message(channel, embed)
+            if channel:
+                embed = await self.create_dashboard_embed(info)
+                await self._update_dashboard_message(channel, embed)
+            else:
+                self.logger.warning(f"Dashboard channel {self.CHANNEL_ID} not found")
+            await self._update_voice_channel_statuses(info)
         except Exception as e:
             self.logger.error(f"Error updating dashboard: {e}")
+
+    async def _update_voice_channel_statuses(self, info: Dict[str, Any]) -> None:
+        """Rename configured voice channels when their Plex status value changes."""
+        for status_config in self._iter_voice_channel_status_config():
+            if not status_config.get("enabled", False):
+                continue
+
+            function_name = status_config.get("function_name")
+            channel_id = status_config.get("channel_id")
+            if function_name not in VOICE_CHANNEL_STATUS_FUNCTIONS or not channel_id:
+                self.logger.warning(f"Invalid voice channel status config skipped: {status_config}")
+                continue
+
+            try:
+                channel_id_int = int(channel_id)
+            except (TypeError, ValueError):
+                self.logger.warning(f"Invalid voice channel ID skipped: {channel_id}")
+                continue
+
+            channel = self.bot.get_channel(channel_id_int)
+            if channel is None:
+                try:
+                    channel = await self.bot.fetch_channel(channel_id_int)
+                except discord.DiscordException as e:
+                    self.logger.warning(f"Unable to fetch voice channel {channel_id_int}: {e}")
+                    continue
+
+            if not hasattr(channel, "edit") or not hasattr(channel, "name"):
+                self.logger.warning(f"Configured channel {channel_id_int} cannot be renamed")
+                continue
+
+            value = self._get_voice_channel_status_value(function_name, info)
+            prefix = str(status_config.get("channel_name_prefix", ""))
+            new_name = f"{prefix}{value}"[:DISCORD_CHANNEL_NAME_LIMIT]
+            if channel.name == new_name:
+                continue
+
+            try:
+                await channel.edit(name=new_name, reason="PlexWatch voice channel status update")
+                self.logger.info(f"Updated voice channel {channel_id_int} to: {new_name}")
+            except discord.Forbidden:
+                self.logger.error(f"Missing permission to rename voice channel {channel_id_int}")
+            except discord.HTTPException as e:
+                self.logger.error(f"Failed to rename voice channel {channel_id_int}: {e}")
+
+    def _iter_voice_channel_status_config(self) -> List[Dict[str, Any]]:
+        """Return voice channel status entries from either list or mapping config shapes."""
+        voice_config = self.config.get("voice_channel_status", [])
+        if isinstance(voice_config, dict):
+            return [entry for entry in voice_config.values() if isinstance(entry, dict)]
+        if isinstance(voice_config, list):
+            return [entry for entry in voice_config if isinstance(entry, dict)]
+        return []
+
+    def _get_voice_channel_status_value(self, function_name: str, info: Dict[str, Any]) -> str:
+        """Resolve a configured voice channel status function to its current value."""
+        if function_name == "Plex Status":
+            return "Online" if info.get("status") == "🟢 Online" else "Offline"
+        if function_name == "Users Streaming":
+            return str(len(info.get("current_streams", [])))
+
+        totals = info.get("library_totals", {})
+        if function_name == "Total Movies":
+            return f"{totals.get('movies', 0):,}"
+        if function_name == "Total Series":
+            return f"{totals.get('series', 0):,}"
+        if function_name == "Total Episodes":
+            return f"{totals.get('episodes', 0):,}"
+        return "Unknown"
 
     async def create_dashboard_embed(self, info: Dict[str, Any]) -> discord.Embed:
         """Create a dashboard embed reflecting server status."""

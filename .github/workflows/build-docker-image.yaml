@@ -6,7 +6,7 @@ permissions:
   id-token: write
 
 env:
-  IMAGE_NAME: ghcr.io/readerr0/plexwatch
+  IMAGE_NAME: ghcr.io/zachary-lemoine/plexwatch
 
 on:
   push:
