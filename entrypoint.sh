@@ -7,7 +7,7 @@ CONFIG_DIR="/app/data"
 mkdir -p "$CONFIG_DIR"
 
 # Copy default config files only if the directory is empty
-if [ -z "$(ls -A $CONFIG_DIR)" ]; then
+if [ -z "$(ls -A "$CONFIG_DIR")" ]; then
     echo "No config files found in $CONFIG_DIR, copying defaults..."
     cp -r /app/defaults/* "$CONFIG_DIR/"
 else

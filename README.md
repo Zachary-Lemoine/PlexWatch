@@ -208,6 +208,38 @@ PlexWatch is customized via `/data/config.json`. Below is the structure with exa
     "cache": {
         "library_update_interval": 900
     },
+    "voice_channel_status": [
+        {
+            "function_name": "Plex Status",
+            "channel_id": "",
+            "channel_name_prefix": "Plex: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Users Streaming",
+            "channel_id": "",
+            "channel_name_prefix": "Streaming: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Movies",
+            "channel_id": "",
+            "channel_name_prefix": "Movies: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Series",
+            "channel_id": "",
+            "channel_name_prefix": "Series: ",
+            "enabled": false
+        },
+        {
+            "function_name": "Total Episodes",
+            "channel_id": "",
+            "channel_name_prefix": "Episodes: ",
+            "enabled": false
+        }
+    ],
     "sabnzbd": {
         "keywords": ["AC3", "DL", "German", "1080p", "2160p", "4K", "GERMAN", "English"]
     }
@@ -238,6 +270,13 @@ PlexWatch is customized via `/data/config.json`. Below is the structure with exa
 
 - **`cache`**:
   - `library_update_interval`: Time (in seconds) between Plex library cache updates (default: 900 = 15 minutes).
+
+- **`voice_channel_status`**:
+  - Optional list of voice channel rename rules. Disabled entries are ignored.
+  - `function_name`: One of `Plex Status`, `Users Streaming`, `Total Movies`, `Total Series`, or `Total Episodes`.
+  - `channel_id`: Discord voice channel ID to rename.
+  - `channel_name_prefix`: Text placed before the current Plex value (for example, `Streaming: `).
+  - `enabled`: If `true`, PlexWatch checks whether the channel name needs to change during each dashboard update.
 
 - **`sabnzbd`**:
   - `keywords`: List of keywords used to trim download names. The bot cuts off the name at the first occurrence of any keyword (e.g., "Movie.Name.German.1080p" becomes "Movie Name"), then limits it to 40 characters (truncating with "..." if longer). This ensures clean, readable names in the dashboard.
